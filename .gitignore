@@ -1,0 +1,53 @@
+# ── Secrets — NEVER commit these ──────────────────────────────────
+.env
+Backend/.env
+frontend/.env
+
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── SQLite (old — no longer used) ─────────────────────────────────
+*.db
+*.sqlite3
+
+# ── ML model artefacts ────────────────────────────────────────────
+# Uncomment if you don't want to track large .pkl files in git
+# ml-model/*.pkl
+
+# ── Node / React ──────────────────────────────────────────────────
+node_modules/
+frontend/build/
+frontend/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Docker ────────────────────────────────────────────────────────
+# (docker-compose.override.yml is fine to gitignore if you use one)
+# docker-compose.override.yml
+
+# ── OS ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo

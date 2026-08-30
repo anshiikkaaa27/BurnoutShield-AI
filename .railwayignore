@@ -1,0 +1,16 @@
+# Railway only needs the Backend/ folder contents
+# These are excluded from the Railway build context
+
+frontend/
+frontend/node_modules/
+frontend/build/
+Dataset/
+ml-model/*.pkl
+.pytest_cache/
+**/__pycache__/
+**/*.pyc
+*.db
+*.sqlite3
+.git/
+docker-compose.yml
+Backend/Dockerfile

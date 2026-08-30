@@ -1,0 +1,93 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════════════
+#  BurnoutShield — Full Stack Docker Compose
+#
+#  How to run:
+#    1.  cp Backend/.env.example Backend/.env
+#        → edit Backend/.env and set SECRET_KEY + MONGO_ROOT_PASSWORD
+#    2.  docker-compose up --build
+#
+#  Ports exposed on your machine:
+#    http://localhost:3000   → React frontend
+#    http://localhost:8000   → FastAPI backend  (direct access / docs)
+#    localhost:27017         → MongoDB          (local dev only)
+#
+#  Inside Docker, containers talk to each other by service name:
+#    frontend  → backend  : via nginx proxy  /api/ → http://backend:8000/
+#    backend   → mongo    : mongodb://mongo:27017
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── MongoDB ─────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: burnoutshield_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-changeme123}
+      MONGO_INITDB_DATABASE:      burnoutshield
+    volumes:
+      - mongo_data:/data/db          # all data persists here permanently
+    ports:
+      - "27017:27017"                # comment out in production
+    healthcheck:
+      # mongo:7 ships mongosh — use it to ping
+      test: >
+        mongosh --quiet --eval
+        "db.adminCommand('ping').ok"
+        mongodb://localhost:27017/admin
+        --username ${MONGO_ROOT_USER:-admin}
+        --password ${MONGO_ROOT_PASSWORD:-changeme123}
+        --authenticationDatabase admin
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ── Backend (FastAPI) ────────────────────────────────────────────
+  backend:
+    build:
+      context: .                     # repo root — includes Backend/ and ml-model/
+      dockerfile: Backend/Dockerfile
+    container_name: burnoutshield_backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - Backend/.env                 # SECRET_KEY, TOKEN_EXPIRE_DAYS, ALLOWED_ORIGINS, etc.
+    environment:
+      # These override anything in .env so the backend always finds the
+      # mongo container by its compose service name, not localhost
+      MONGO_URI:      "mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-changeme123}@mongo:27017/burnoutshield?authSource=admin"
+      MONGO_DB_NAME:  burnoutshield
+      ENV:            production
+      PORT:           "8000"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost"
+    ports:
+      - "8000:8000"
+
+  # ── Frontend (React → nginx) ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Inside the browser the user's machine hits /api which nginx proxies
+        # to the backend container. /api is on the same origin as the page
+        # so no CORS issue and no hardcoded IP needed.
+        REACT_APP_API_URL: ""        # empty = use relative /api path via nginx
+    container_name: burnoutshield_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+# ── Named volumes ────────────────────────────────────────────────
+volumes:
+  mongo_data:
+    driver: local
