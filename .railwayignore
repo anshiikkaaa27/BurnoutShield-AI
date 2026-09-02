@@ -13,4 +13,6 @@ ml-model/*.pkl
 *.sqlite3
 .git/
 docker-compose.yml
+# Exclude Dockerfile so Railway uses Nixpacks instead
 Backend/Dockerfile
+Dockerfile
